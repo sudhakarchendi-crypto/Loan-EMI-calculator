@@ -1,0 +1,1398 @@
+<!doctype html>
+<html lang="en" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Loan EMI & Amortization Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#eef2ff",
+                100: "#e0e7ff",
+                500: "#6366f1",
+                600: "#4f46e5",
+                700: "#4338ca",
+              },
+            },
+          },
+        },
+      };
+    </script>
+
+    <style>
+      /* Custom Range Slider Styling */
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 8px;
+        border-radius: 9999px;
+        outline: none;
+        transition: background 0.15s ease;
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #4f46e5;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      .dark input[type="range"]::-webkit-slider-thumb {
+        border-color: #1e293b;
+        background: #6366f1;
+      }
+
+      input[type="range"]::-webkit-slider-thumb:hover {
+        transform: scale(1.12);
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.5);
+      }
+
+      input[type="range"]::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #4f46e5;
+        border: 3px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(79, 70, 229, 0.4);
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      /* Remove number input arrows */
+      input[type="number"]::-webkit-inner-spin-button,
+      input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type="number"] {
+        -moz-appearance: textfield;
+      }
+
+      /* Smooth Donut Chart Animation */
+      .donut-segment {
+        transition:
+          stroke-dasharray 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+          stroke-dashoffset 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Custom Scrollbar for Schedule Table */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 9999px;
+      }
+      .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #475569;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans min-h-screen transition-colors duration-200"
+  >
+    <!-- Toast Notification Container -->
+    <div
+      id="toast"
+      class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-3 rounded-xl shadow-xl font-medium text-sm"
+    >
+      <i
+        data-lucide="check-circle-2"
+        class="w-4 h-4 text-emerald-400 dark:text-emerald-600"
+      ></i>
+      <span id="toast-message">Copied to clipboard!</span>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header
+      class="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200/80 dark:border-slate-800"
+    >
+      <div
+        class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between"
+      >
+        <div class="flex items-center gap-3">
+          <div
+            class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20"
+          >
+            <i data-lucide="calculator" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1
+              class="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none"
+            >
+              FinCalc Pro
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Loan EMI & Amortization Planner
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+          <!-- Currency Selector -->
+          <div
+            class="relative flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/60 dark:border-slate-700"
+          >
+            <button
+              onclick="setCurrency('INR')"
+              id="curr-INR"
+              class="curr-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm"
+            >
+              ₹ INR
+            </button>
+            <button
+              onclick="setCurrency('USD')"
+              id="curr-USD"
+              class="curr-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            >
+              $ USD
+            </button>
+            <button
+              onclick="setCurrency('EUR')"
+              id="curr-EUR"
+              class="curr-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            >
+              € EUR
+            </button>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button
+            onclick="toggleTheme()"
+            class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors border border-slate-200/60 dark:border-slate-700"
+            title="Toggle Dark Mode"
+          >
+            <i
+              data-lucide="moon"
+              id="theme-icon-dark"
+              class="w-4 h-4 block dark:hidden"
+            ></i>
+            <i
+              data-lucide="sun"
+              id="theme-icon-light"
+              class="w-4 h-4 hidden dark:block text-amber-400"
+            ></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <!-- Loan Category Quick Presets -->
+      <div
+        class="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-800"
+      >
+        <div
+          class="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300"
+        >
+          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-500"></i>
+          <span>Quick Loan Presets:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            onclick="applyPreset('home')"
+            id="preset-home"
+            class="preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/70 transition-all"
+          >
+            <i data-lucide="home" class="w-3.5 h-3.5"></i> Home Loan
+          </button>
+          <button
+            onclick="applyPreset('car')"
+            id="preset-car"
+            class="preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-transparent transition-all"
+          >
+            <i data-lucide="car" class="w-3.5 h-3.5"></i> Car Loan
+          </button>
+          <button
+            onclick="applyPreset('personal')"
+            id="preset-personal"
+            class="preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-transparent transition-all"
+          >
+            <i data-lucide="user" class="w-3.5 h-3.5"></i> Personal Loan
+          </button>
+          <button
+            onclick="applyPreset('education')"
+            id="preset-education"
+            class="preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-transparent transition-all"
+          >
+            <i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i> Education
+            Loan
+          </button>
+        </div>
+      </div>
+
+      <!-- Calculator Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- Left Column: Interactive Sliders & Inputs (7 Cols) -->
+        <div
+          class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800 space-y-8"
+        >
+          <!-- 1. Loan Amount Input -->
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label
+                for="amount-input"
+                class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"
+              >
+                <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                Loan Amount
+              </label>
+              <div class="relative flex items-center">
+                <span
+                  id="currency-symbol-input"
+                  class="absolute left-3.5 text-slate-400 font-semibold text-sm select-none"
+                  >₹</span
+                >
+                <input
+                  type="number"
+                  id="amount-input"
+                  value="5000000"
+                  min="10000"
+                  max="100000000"
+                  step="10000"
+                  class="w-44 sm:w-48 pl-8 pr-4 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-right font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-base"
+                />
+              </div>
+            </div>
+
+            <input
+              type="range"
+              id="amount-slider"
+              min="50000"
+              max="25000000"
+              step="25000"
+              value="5000000"
+            />
+
+            <div
+              class="flex justify-between text-xs font-medium text-slate-400 dark:text-slate-500"
+            >
+              <span id="amount-min-label">₹50K</span>
+              <span
+                id="amount-words"
+                class="text-indigo-600 dark:text-indigo-400 font-semibold"
+                >₹50.00 Lakhs</span
+              >
+              <span id="amount-max-label">₹2.5Cr</span>
+            </div>
+          </div>
+
+          <hr class="border-slate-100 dark:border-slate-800/80" />
+
+          <!-- 2. Interest Rate Input -->
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label
+                for="rate-input"
+                class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"
+              >
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                Interest Rate (% per annum)
+              </label>
+              <div class="relative flex items-center">
+                <input
+                  type="number"
+                  id="rate-input"
+                  value="8.5"
+                  min="1"
+                  max="35"
+                  step="0.1"
+                  class="w-32 pr-8 pl-4 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-right font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-base"
+                />
+                <span
+                  class="absolute right-3.5 text-slate-400 font-semibold text-sm select-none"
+                  >%</span
+                >
+              </div>
+            </div>
+
+            <input
+              type="range"
+              id="rate-slider"
+              min="1"
+              max="30"
+              step="0.1"
+              value="8.5"
+            />
+
+            <div
+              class="flex justify-between text-xs font-medium text-slate-400 dark:text-slate-500"
+            >
+              <span>1%</span>
+              <span>15%</span>
+              <span>30%</span>
+            </div>
+          </div>
+
+          <hr class="border-slate-100 dark:border-slate-800/80" />
+
+          <!-- 3. Loan Tenure Input (With Years / Months Toggle) -->
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <label
+                for="tenure-input"
+                class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2"
+              >
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                Loan Tenure
+              </label>
+
+              <div class="flex items-center gap-2">
+                <input
+                  type="number"
+                  id="tenure-input"
+                  value="20"
+                  min="1"
+                  max="40"
+                  step="1"
+                  class="w-24 px-3.5 py-2 bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 rounded-xl text-right font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-base"
+                />
+                <!-- Tenure Unit Toggle -->
+                <div
+                  class="inline-flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/70 dark:border-slate-700"
+                >
+                  <button
+                    type="button"
+                    id="unit-yr"
+                    onclick="setTenureUnit('years')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm"
+                  >
+                    Yr
+                  </button>
+                  <button
+                    type="button"
+                    id="unit-mo"
+                    onclick="setTenureUnit('months')"
+                    class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  >
+                    Mo
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <input
+              type="range"
+              id="tenure-slider"
+              min="1"
+              max="30"
+              step="1"
+              value="20"
+            />
+
+            <div
+              class="flex justify-between text-xs font-medium text-slate-400 dark:text-slate-500"
+            >
+              <span id="tenure-min-label">1 Yr</span>
+              <span
+                id="tenure-converted-hint"
+                class="text-emerald-600 dark:text-emerald-400 font-semibold"
+                >240 Months</span
+              >
+              <span id="tenure-max-label">30 Yrs</span>
+            </div>
+          </div>
+
+          <!-- Optional Starting Date for Amortization Schedule -->
+          <div
+            class="pt-2 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/80"
+          >
+            <div
+              class="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400"
+            >
+              <i
+                data-lucide="calendar-clock"
+                class="w-4 h-4 text-indigo-500"
+              ></i>
+              <span>EMI Start Month:</span>
+            </div>
+            <input
+              type="month"
+              id="start-month"
+              class="px-3 py-1.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        <!-- Right Column: Real-Time Summary & Breakdown Chart (5 Cols) -->
+        <div
+          class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200/80 dark:border-slate-800 flex flex-col justify-between space-y-6"
+        >
+          <!-- Primary Monthly EMI Banner -->
+          <div
+            class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 p-6 text-white shadow-lg shadow-indigo-500/20"
+          >
+            <div class="relative z-10 flex items-start justify-between">
+              <div>
+                <span
+                  class="text-xs font-semibold uppercase tracking-wider text-indigo-200"
+                  >Monthly Loan EMI</span
+                >
+                <div
+                  id="emi-display"
+                  class="text-3xl sm:text-4xl font-extrabold mt-1 tracking-tight"
+                >
+                  ₹43,391
+                </div>
+                <p
+                  id="payoff-date-badge"
+                  class="text-xs text-indigo-100/90 mt-2 flex items-center gap-1.5"
+                >
+                  <i
+                    data-lucide="check-circle"
+                    class="w-3.5 h-3.5 text-emerald-300"
+                  ></i>
+                  <span>Estimated Payoff: <strong>Oct 2046</strong></span>
+                </p>
+              </div>
+              <button
+                onclick="copySummary()"
+                class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                title="Copy Loan Summary"
+              >
+                <i data-lucide="copy" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <!-- Decorative background circle -->
+            <div
+              class="absolute -right-8 -bottom-10 w-36 h-36 rounded-full bg-white/10 blur-xl pointer-events-none"
+            ></div>
+          </div>
+
+          <!-- Interactive Donut Chart & Legend -->
+          <div class="grid grid-cols-1 sm:grid-cols-12 items-center gap-4 py-2">
+            <!-- SVG Donut Chart -->
+            <div class="sm:col-span-5 flex justify-center relative">
+              <svg class="w-40 h-40 transform -rotate-90" viewBox="0 0 120 120">
+                <!-- Background Ring (Interest) -->
+                <circle
+                  cx="60"
+                  cy="60"
+                  r="46"
+                  fill="transparent"
+                  stroke="#f59e0b"
+                  stroke-width="16"
+                  class="opacity-90"
+                />
+                <!-- Foreground Ring (Principal) -->
+                <circle
+                  id="donut-principal"
+                  cx="60"
+                  cy="60"
+                  r="46"
+                  fill="transparent"
+                  stroke="#4f46e5"
+                  stroke-width="16"
+                  stroke-dasharray="289.026"
+                  stroke-dashoffset="144.5"
+                  stroke-linecap="butt"
+                  class="donut-segment"
+                />
+              </svg>
+              <!-- Center Percentage Text -->
+              <div
+                class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none"
+              >
+                <span
+                  class="text-[11px] font-medium text-slate-400 dark:text-slate-500"
+                  >Interest Share</span
+                >
+                <span
+                  id="chart-center-interest"
+                  class="text-lg font-extrabold text-amber-500"
+                  >52.0%</span
+                >
+              </div>
+            </div>
+
+            <!-- Breakdown Metric Cards -->
+            <div class="sm:col-span-7 space-y-3">
+              <!-- Principal Card -->
+              <div
+                class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="w-3 h-3 rounded-full bg-indigo-600 shrink-0"
+                  ></span>
+                  <div>
+                    <div
+                      class="text-xs text-slate-500 dark:text-slate-400 font-medium"
+                    >
+                      Principal Amount
+                    </div>
+                    <div
+                      id="principal-pct"
+                      class="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400"
+                    >
+                      48.0% of total
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="principal-display"
+                  class="text-sm font-bold text-slate-900 dark:text-white"
+                >
+                  ₹50,00,000
+                </div>
+              </div>
+
+              <!-- Total Interest Card -->
+              <div
+                class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span
+                    class="w-3 h-3 rounded-full bg-amber-500 shrink-0"
+                  ></span>
+                  <div>
+                    <div
+                      class="text-xs text-slate-500 dark:text-slate-400 font-medium"
+                    >
+                      Total Interest
+                    </div>
+                    <div
+                      id="interest-pct"
+                      class="text-[11px] font-semibold text-amber-600 dark:text-amber-400"
+                    >
+                      52.0% of total
+                    </div>
+                  </div>
+                </div>
+                <div
+                  id="interest-display"
+                  class="text-sm font-bold text-slate-900 dark:text-white"
+                >
+                  ₹54,13,879
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stacked Horizontal Bar Breakdown -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs font-semibold">
+              <span
+                class="text-indigo-600 dark:text-indigo-400 flex items-center gap-1"
+              >
+                Principal (<span id="bar-principal-pct">48%</span>)
+              </span>
+              <span
+                class="text-amber-600 dark:text-amber-400 flex items-center gap-1"
+              >
+                Interest (<span id="bar-interest-pct">52%</span>)
+              </span>
+            </div>
+            <div
+              class="w-full h-3 bg-amber-500 rounded-full overflow-hidden flex p-0.5 gap-0.5"
+            >
+              <div
+                id="bar-principal-fill"
+                class="h-full bg-indigo-600 rounded-l-full transition-all duration-500"
+                style="width: 48%"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Total Payment Footer Box -->
+          <div
+            class="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between"
+          >
+            <div>
+              <span
+                class="text-xs font-medium text-slate-500 dark:text-slate-400 block"
+                >Total Payment</span
+              >
+              <span class="text-[11px] text-slate-400 dark:text-slate-500"
+                >(Principal + Total Interest)</span
+              >
+            </div>
+            <div
+              id="total-display"
+              class="text-xl font-extrabold text-slate-900 dark:text-white"
+            >
+              ₹1,04,13,879
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amortization Schedule Section -->
+      <section
+        class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden"
+      >
+        <!-- Schedule Header & Controls -->
+        <div
+          class="p-6 sm:px-8 border-b border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+        >
+          <div>
+            <div class="flex items-center gap-2">
+              <i
+                data-lucide="table-2"
+                class="w-5 h-5 text-indigo-600 dark:text-indigo-400"
+              ></i>
+              <h2 class="text-lg font-bold text-slate-900 dark:text-white">
+                Amortization Repayment Schedule
+              </h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Click on any year row to inspect the month-by-month principal &
+              interest breakdown.
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2.5">
+            <button
+              onclick="toggleAllYears()"
+              id="expand-all-btn"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            >
+              <i data-lucide="chevrons-up-down" class="w-3.5 h-3.5"></i>
+              <span id="expand-all-text">Expand All Years</span>
+            </button>
+
+            <button
+              onclick="exportCSV()"
+              class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border border-indigo-200/60 dark:border-indigo-800/60 transition-colors"
+            >
+              <i data-lucide="download" class="w-3.5 h-3.5"></i>
+              <span>Export CSV</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Container -->
+        <div class="overflow-x-auto max-h-[600px] custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead
+              class="sticky top-0 z-20 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-sm text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700"
+            >
+              <tr>
+                <th class="py-4 px-6">Year / Month</th>
+                <th class="py-4 px-6 text-right">Principal (A)</th>
+                <th class="py-4 px-6 text-right">Interest (B)</th>
+                <th class="py-4 px-6 text-right">Total Payment (A + B)</th>
+                <th class="py-4 px-6 text-right">Closing Balance</th>
+                <th class="py-4 px-6 w-36 text-right hidden md:table-cell">
+                  Loan Paid %
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="schedule-tbody"
+              class="divide-y divide-slate-200/70 dark:divide-slate-800 text-sm"
+            >
+              <!-- Dynamically Populated via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-xs text-slate-400 dark:text-slate-500"
+    >
+      <p>
+        Calculations are based on standard reducing-balance compound interest
+        formulas: <code>EMI = [P × r × (1+r)^n] / [(1+r)^n - 1]</code>
+      </p>
+    </footer>
+
+    <!-- Application JavaScript -->
+    <script>
+      // --- State Configuration ---
+      const state = {
+        principal: 5000000,
+        annualRate: 8.5,
+        tenureValue: 20,
+        tenureUnit: "years", // 'years' | 'months'
+        currency: "INR", // 'INR' | 'USD' | 'EUR'
+        startYear: new Date().getFullYear(),
+        startMonth: new Date().getMonth(), // 0-indexed
+        expandedYears: new Set(),
+        allExpanded: false,
+        scheduleData: [],
+      };
+
+      const currencies = {
+        INR: {
+          symbol: "₹",
+          locale: "en-IN",
+          maxSlider: 25000000,
+          minSlider: 50000,
+          step: 25000,
+        },
+        USD: {
+          symbol: "$",
+          locale: "en-US",
+          maxSlider: 2000000,
+          minSlider: 5000,
+          step: 5000,
+        },
+        EUR: {
+          symbol: "€",
+          locale: "de-DE",
+          maxSlider: 2000000,
+          minSlider: 5000,
+          step: 5000,
+        },
+      };
+
+      const presets = {
+        home: {
+          INR: 5000000,
+          USD: 350000,
+          EUR: 300000,
+          rate: 8.5,
+          tenureYr: 20,
+        },
+        car: { INR: 1000000, USD: 35000, EUR: 30000, rate: 9.2, tenureYr: 5 },
+        personal: {
+          INR: 500000,
+          USD: 15000,
+          EUR: 12000,
+          rate: 12.5,
+          tenureYr: 3,
+        },
+        education: {
+          INR: 2000000,
+          USD: 60000,
+          EUR: 50000,
+          rate: 10.0,
+          tenureYr: 8,
+        },
+      };
+
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+
+      // --- DOM Elements ---
+      const els = {
+        amountInput: document.getElementById("amount-input"),
+        amountSlider: document.getElementById("amount-slider"),
+        amountWords: document.getElementById("amount-words"),
+        amountMinLabel: document.getElementById("amount-min-label"),
+        amountMaxLabel: document.getElementById("amount-max-label"),
+        currencySymbolInput: document.getElementById("currency-symbol-input"),
+
+        rateInput: document.getElementById("rate-input"),
+        rateSlider: document.getElementById("rate-slider"),
+
+        tenureInput: document.getElementById("tenure-input"),
+        tenureSlider: document.getElementById("tenure-slider"),
+        tenureMinLabel: document.getElementById("tenure-min-label"),
+        tenureMaxLabel: document.getElementById("tenure-max-label"),
+        tenureConvertedHint: document.getElementById("tenure-converted-hint"),
+        unitYrBtn: document.getElementById("unit-yr"),
+        unitMoBtn: document.getElementById("unit-mo"),
+
+        startMonthInput: document.getElementById("start-month"),
+
+        emiDisplay: document.getElementById("emi-display"),
+        principalDisplay: document.getElementById("principal-display"),
+        interestDisplay: document.getElementById("interest-display"),
+        totalDisplay: document.getElementById("total-display"),
+        payoffDateBadge: document.getElementById("payoff-date-badge"),
+
+        principalPct: document.getElementById("principal-pct"),
+        interestPct: document.getElementById("interest-pct"),
+        chartCenterInterest: document.getElementById("chart-center-interest"),
+        donutPrincipal: document.getElementById("donut-principal"),
+        barPrincipalPct: document.getElementById("bar-principal-pct"),
+        barInterestPct: document.getElementById("bar-interest-pct"),
+        barPrincipalFill: document.getElementById("bar-principal-fill"),
+
+        scheduleTbody: document.getElementById("schedule-tbody"),
+        expandAllText: document.getElementById("expand-all-text"),
+      };
+
+      // --- Formatting Helpers ---
+      function formatCurrency(val) {
+        const cfg = currencies[state.currency];
+        return new Intl.NumberFormat(cfg.locale, {
+          style: "currency",
+          currency: state.currency,
+          maximumFractionDigits: 0,
+        }).format(Math.round(val));
+      }
+
+      function formatReadableShort(val) {
+        const sym = currencies[state.currency].symbol;
+        if (state.currency === "INR") {
+          if (val >= 10000000)
+            return `${sym}${(val / 10000000).toFixed(2)} Crore`;
+          if (val >= 100000) return `${sym}${(val / 100000).toFixed(2)} Lakhs`;
+          if (val >= 1000) return `${sym}${(val / 1000).toFixed(1)} Thousand`;
+          return `${sym}${val}`;
+        } else {
+          if (val >= 1000000)
+            return `${sym}${(val / 1000000).toFixed(2)} Million`;
+          if (val >= 1000) return `${sym}${(val / 1000).toFixed(1)}K`;
+          return `${sym}${val}`;
+        }
+      }
+
+      function updateSliderTrackFill(slider) {
+        const min = parseFloat(slider.min) || 0;
+        const max = parseFloat(slider.max) || 100;
+        const val = parseFloat(slider.value) || 0;
+        const pct = Math.min(
+          100,
+          Math.max(0, ((val - min) / (max - min)) * 100),
+        );
+        const isDark = document.documentElement.classList.contains("dark");
+        const activeColor = isDark ? "#6366f1" : "#4f46e5";
+        const trackColor = isDark ? "#334155" : "#e2e8f0";
+        slider.style.background = `linear-gradient(to right, ${activeColor} 0%, ${activeColor} ${pct}%, ${trackColor} ${pct}%, ${trackColor} 100%)`;
+      }
+
+      // --- Theme Toggle ---
+      function toggleTheme() {
+        document.documentElement.classList.toggle("dark");
+        updateAllSliderFills();
+      }
+
+      function updateAllSliderFills() {
+        updateSliderTrackFill(els.amountSlider);
+        updateSliderTrackFill(els.rateSlider);
+        updateSliderTrackFill(els.tenureSlider);
+      }
+
+      // --- Currency Switching ---
+      function setCurrency(currCode) {
+        const oldCurr = state.currency;
+        state.currency = currCode;
+        const cfg = currencies[currCode];
+
+        // Update currency buttons UI
+        document.querySelectorAll(".curr-btn").forEach((btn) => {
+          btn.className =
+            "curr-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+        });
+        const activeBtn = document.getElementById(`curr-${currCode}`);
+        if (activeBtn) {
+          activeBtn.className =
+            "curr-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm";
+        }
+
+        // Adjust slider bounds & convert approximate value if switching between INR and USD/EUR
+        els.currencySymbolInput.textContent = cfg.symbol;
+        els.amountSlider.min = cfg.minSlider;
+        els.amountSlider.max = cfg.maxSlider;
+        els.amountSlider.step = cfg.step;
+
+        if (oldCurr === "INR" && currCode !== "INR") {
+          state.principal = Math.max(
+            cfg.minSlider,
+            Math.round(state.principal / 50),
+          );
+        } else if (oldCurr !== "INR" && currCode === "INR") {
+          state.principal = Math.min(
+            cfg.maxSlider,
+            Math.round(state.principal * 50),
+          );
+        }
+
+        els.amountInput.value = state.principal;
+        els.amountSlider.value = Math.min(cfg.maxSlider, state.principal);
+
+        els.amountMinLabel.textContent =
+          currCode === "INR" ? "₹50K" : `${cfg.symbol}5K`;
+        els.amountMaxLabel.textContent =
+          currCode === "INR" ? "₹2.5Cr" : `${cfg.symbol}2M`;
+
+        calculateAndRender();
+      }
+
+      // --- Quick Presets ---
+      function applyPreset(type) {
+        const p = presets[type];
+        if (!p) return;
+
+        // Highlight active preset button
+        document.querySelectorAll(".preset-btn").forEach((btn) => {
+          btn.className =
+            "preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700 border border-transparent transition-all";
+        });
+        const activePreset = document.getElementById(`preset-${type}`);
+        if (activePreset) {
+          activePreset.className =
+            "preset-btn flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/70 transition-all";
+        }
+
+        state.principal = p[state.currency];
+        state.annualRate = p.rate;
+        state.tenureValue =
+          state.tenureUnit === "years" ? p.tenureYr : p.tenureYr * 12;
+
+        els.amountInput.value = state.principal;
+        els.amountSlider.value = state.principal;
+        els.rateInput.value = state.annualRate;
+        els.rateSlider.value = state.annualRate;
+        els.tenureInput.value = state.tenureValue;
+        els.tenureSlider.value = state.tenureValue;
+
+        calculateAndRender();
+      }
+
+      // --- Tenure Unit Switching (Years vs Months) ---
+      function setTenureUnit(unit) {
+        if (state.tenureUnit === unit) return;
+
+        if (unit === "months") {
+          state.tenureValue = Math.round(state.tenureValue * 12);
+          els.tenureSlider.min = 6;
+          els.tenureSlider.max = 360;
+          els.tenureSlider.step = 1;
+          els.tenureInput.max = 480;
+          els.tenureMinLabel.textContent = "6 Mo";
+          els.tenureMaxLabel.textContent = "360 Mo";
+
+          els.unitMoBtn.className =
+            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm";
+          els.unitYrBtn.className =
+            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+        } else {
+          state.tenureValue = Math.max(1, Math.round(state.tenureValue / 12));
+          els.tenureSlider.min = 1;
+          els.tenureSlider.max = 30;
+          els.tenureSlider.step = 1;
+          els.tenureInput.max = 40;
+          els.tenureMinLabel.textContent = "1 Yr";
+          els.tenureMaxLabel.textContent = "30 Yrs";
+
+          els.unitYrBtn.className =
+            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm";
+          els.unitMoBtn.className =
+            "px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white";
+        }
+
+        state.tenureUnit = unit;
+        els.tenureInput.value = state.tenureValue;
+        els.tenureSlider.value = state.tenureValue;
+        calculateAndRender();
+      }
+
+      // --- Core EMI & Amortization Calculation ---
+      function calculateAndRender() {
+        const P = Math.max(1, parseFloat(state.principal) || 0);
+        const annualR = Math.max(0, parseFloat(state.annualRate) || 0);
+        const totalMonths =
+          state.tenureUnit === "years"
+            ? Math.max(1, Math.round(state.tenureValue * 12))
+            : Math.max(1, Math.round(state.tenureValue));
+
+        // Update helper labels
+        els.amountWords.textContent = formatReadableShort(P);
+        if (state.tenureUnit === "years") {
+          els.tenureConvertedHint.textContent = `${totalMonths} Months`;
+        } else {
+          const yrs = (totalMonths / 12).toFixed(1).replace(/\.0$/, "");
+          els.tenureConvertedHint.textContent = `${yrs} ${yrs == 1 ? "Year" : "Years"}`;
+        }
+
+        updateAllSliderFills();
+
+        // Monthly interest rate
+        const r = annualR / 12 / 100;
+        let emi = 0;
+
+        if (r === 0) {
+          emi = P / totalMonths;
+        } else {
+          const factor = Math.pow(1 + r, totalMonths);
+          emi = (P * r * factor) / (factor - 1);
+        }
+
+        const totalPayment = emi * totalMonths;
+        const totalInterest = Math.max(0, totalPayment - P);
+
+        // Percentages
+        const principalShare =
+          totalPayment > 0 ? (P / totalPayment) * 100 : 100;
+        const interestShare =
+          totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0;
+
+        // Update Primary Metrics UI
+        els.emiDisplay.textContent = formatCurrency(emi);
+        els.principalDisplay.textContent = formatCurrency(P);
+        els.interestDisplay.textContent = formatCurrency(totalInterest);
+        els.totalDisplay.textContent = formatCurrency(totalPayment);
+
+        els.principalPct.textContent = `${principalShare.toFixed(1)}% of total`;
+        els.interestPct.textContent = `${interestShare.toFixed(1)}% of total`;
+        els.chartCenterInterest.textContent = `${interestShare.toFixed(1)}%`;
+
+        els.barPrincipalPct.textContent = `${Math.round(principalShare)}%`;
+        els.barInterestPct.textContent = `${Math.round(interestShare)}%`;
+        els.barPrincipalFill.style.width = `${principalShare}%`;
+
+        // Update SVG Donut Chart (Circumference = 2 * PI * 46 ≈ 289.026)
+        const circumference = 289.026;
+        const offset = circumference - (principalShare / 100) * circumference;
+        els.donutPrincipal.style.strokeDashoffset = offset;
+
+        // Generate Amortization Data
+        buildAmortizationSchedule(P, r, emi, totalMonths);
+        renderScheduleTable();
+      }
+
+      function buildAmortizationSchedule(P, r, emi, totalMonths) {
+        let balance = P;
+        const yearlyMap = new Map();
+
+        let currYear = state.startYear;
+        let currMonth = state.startMonth; // 0 - 11
+
+        for (let m = 1; m <= totalMonths; m++) {
+          const interestForMonth = balance * r;
+          let principalForMonth = emi - interestForMonth;
+          let actualEmi = emi;
+
+          if (m === totalMonths || principalForMonth > balance) {
+            principalForMonth = balance;
+            actualEmi = principalForMonth + interestForMonth;
+            balance = 0;
+          } else {
+            balance = Math.max(0, balance - principalForMonth);
+          }
+
+          const paidPct = ((P - balance) / P) * 100;
+
+          if (!yearlyMap.has(currYear)) {
+            yearlyMap.set(currYear, {
+              year: currYear,
+              principal: 0,
+              interest: 0,
+              totalPayment: 0,
+              closingBalance: balance,
+              paidPct: paidPct,
+              months: [],
+            });
+          }
+
+          const yearGroup = yearlyMap.get(currYear);
+          yearGroup.principal += principalForMonth;
+          yearGroup.interest += interestForMonth;
+          yearGroup.totalPayment += actualEmi;
+          yearGroup.closingBalance = balance;
+          yearGroup.paidPct = paidPct;
+
+          yearGroup.months.push({
+            monthIndex: m,
+            monthName: monthNames[currMonth],
+            year: currYear,
+            principal: principalForMonth,
+            interest: interestForMonth,
+            totalPayment: actualEmi,
+            closingBalance: balance,
+            paidPct: paidPct,
+          });
+
+          // Advance calendar month
+          currMonth++;
+          if (currMonth > 11) {
+            currMonth = 0;
+            currYear++;
+          }
+        }
+
+        // Update Payoff Date Badge
+        const lastMonthIndex = (state.startMonth + totalMonths - 1) % 12;
+        const payoffYear =
+          state.startYear +
+          Math.floor((state.startMonth + totalMonths - 1) / 12);
+        els.payoffDateBadge.innerHTML = `
+                <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-300"></i>
+                <span>Estimated Payoff: <strong>${monthNames[lastMonthIndex]} ${payoffYear}</strong> (${totalMonths} EMIs)</span>
+            `;
+        lucide.createIcons();
+
+        state.scheduleData = Array.from(yearlyMap.values());
+
+        // Auto-expand the first year by default if nothing expanded yet
+        if (state.expandedYears.size === 0 && state.scheduleData.length > 0) {
+          state.expandedYears.add(state.scheduleData[0].year);
+        }
+      }
+
+      function renderScheduleTable() {
+        let html = "";
+
+        state.scheduleData.forEach((yrData) => {
+          const isExpanded = state.expandedYears.has(yrData.year);
+
+          // Year Summary Row
+          html += `
+                    <tr onclick="toggleYearRow(${yrData.year})" class="cursor-pointer bg-white dark:bg-slate-900 hover:bg-indigo-50/50 dark:hover:bg-slate-800/70 transition-colors font-semibold">
+                        <td class="py-4 px-6 flex items-center gap-2.5 text-slate-900 dark:text-white">
+                            <span class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isExpanded ? "rotate-90 bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400" : ""}">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                            </span>
+                            <span>${yrData.year}</span>
+                            <span class="text-[11px] font-normal px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">${yrData.months.length} mo</span>
+                        </td>
+                        <td class="py-4 px-6 text-right text-indigo-600 dark:text-indigo-400">${formatCurrency(yrData.principal)}</td>
+                        <td class="py-4 px-6 text-right text-amber-600 dark:text-amber-400">${formatCurrency(yrData.interest)}</td>
+                        <td class="py-4 px-6 text-right text-slate-900 dark:text-white">${formatCurrency(yrData.totalPayment)}</td>
+                        <td class="py-4 px-6 text-right text-slate-700 dark:text-slate-300">${formatCurrency(yrData.closingBalance)}</td>
+                        <td class="py-4 px-6 text-right hidden md:table-cell">
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="text-xs font-bold text-slate-600 dark:text-slate-400">${yrData.paidPct.toFixed(1)}%</span>
+                                <div class="w-16 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-emerald-500 rounded-full" style="width: ${yrData.paidPct}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+          // Monthly Breakdown Rows
+          if (isExpanded) {
+            yrData.months.forEach((mo) => {
+              html += `
+                            <tr class="bg-slate-50/80 dark:bg-slate-800/30 text-xs text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800/60">
+                                <td class="py-3 pl-14 pr-6 font-medium flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                                    <span>${mo.monthName} ${mo.year}</span>
+                                    <span class="text-[10px] text-slate-400">(#${mo.monthIndex})</span>
+                                </td>
+                                <td class="py-3 px-6 text-right font-medium text-slate-700 dark:text-slate-300">${formatCurrency(mo.principal)}</td>
+                                <td class="py-3 px-6 text-right font-medium text-slate-700 dark:text-slate-300">${formatCurrency(mo.interest)}</td>
+                                <td class="py-3 px-6 text-right font-semibold text-slate-800 dark:text-slate-200">${formatCurrency(mo.totalPayment)}</td>
+                                <td class="py-3 px-6 text-right font-medium">${formatCurrency(mo.closingBalance)}</td>
+                                <td class="py-3 px-6 text-right hidden md:table-cell text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                                    ${mo.paidPct.toFixed(1)}%
+                                </td>
+                            </tr>
+                        `;
+            });
+          }
+        });
+
+        els.scheduleTbody.innerHTML = html;
+      }
+
+      function toggleYearRow(year) {
+        if (state.expandedYears.has(year)) {
+          state.expandedYears.delete(year);
+        } else {
+          state.expandedYears.add(year);
+        }
+        renderScheduleTable();
+      }
+
+      function toggleAllYears() {
+        state.allExpanded = !state.allExpanded;
+        if (state.allExpanded) {
+          state.scheduleData.forEach((yr) => state.expandedYears.add(yr.year));
+          els.expandAllText.textContent = "Collapse All Years";
+        } else {
+          state.expandedYears.clear();
+          els.expandAllText.textContent = "Expand All Years";
+        }
+        renderScheduleTable();
+      }
+
+      // --- Utility: Copy Summary & Export CSV ---
+      function showToast(msg) {
+        const toast = document.getElementById("toast");
+        document.getElementById("toast-message").textContent = msg;
+        toast.classList.remove("translate-y-20", "opacity-0");
+        setTimeout(() => {
+          toast.classList.add("translate-y-20", "opacity-0");
+        }, 2600);
+      }
+
+      function copySummary() {
+        const summaryText =
+          `Loan EMI Summary:\n` +
+          `• Loan Amount: ${els.principalDisplay.textContent}\n` +
+          `• Interest Rate: ${state.annualRate}% p.a.\n` +
+          `• Tenure: ${state.tenureValue} ${state.tenureUnit}\n` +
+          `• Monthly EMI: ${els.emiDisplay.textContent}\n` +
+          `• Total Interest Payable: ${els.interestDisplay.textContent}\n` +
+          `• Total Payment: ${els.totalDisplay.textContent}`;
+
+        const tempInput = document.createElement("textarea");
+        tempInput.value = summaryText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand("copy");
+        document.body.removeChild(tempInput);
+
+        showToast("Loan summary copied to clipboard!");
+      }
+
+      function exportCSV() {
+        const rows = [
+          [
+            "Installment #",
+            "Month",
+            "Year",
+            "Principal",
+            "Interest",
+            "Total EMI",
+            "Closing Balance",
+            "Loan Paid %",
+          ],
+        ];
+
+        state.scheduleData.forEach((yr) => {
+          yr.months.forEach((mo) => {
+            rows.push([
+              mo.monthIndex,
+              mo.monthName,
+              mo.year,
+              Math.round(mo.principal),
+              Math.round(mo.interest),
+              Math.round(mo.totalPayment),
+              Math.round(mo.closingBalance),
+              mo.paidPct.toFixed(2) + "%",
+            ]);
+          });
+        });
+
+        const csvContent =
+          "data:text/csv;charset=utf-8," +
+          rows.map((e) => e.join(",")).join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute(
+          "download",
+          `loan_amortization_schedule_${state.principal}.csv`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast("Amortization schedule exported as CSV!");
+      }
+
+      // --- Event Listeners Binding ---
+      function initEventListeners() {
+        // Loan Amount Sync
+        els.amountSlider.addEventListener("input", (e) => {
+          state.principal = parseFloat(e.target.value);
+          els.amountInput.value = state.principal;
+          calculateAndRender();
+        });
+        els.amountInput.addEventListener("input", (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val > 0) {
+            state.principal = val;
+            els.amountSlider.value = Math.min(
+              parseFloat(els.amountSlider.max),
+              Math.max(parseFloat(els.amountSlider.min), val),
+            );
+            calculateAndRender();
+          }
+        });
+
+        // Interest Rate Sync
+        els.rateSlider.addEventListener("input", (e) => {
+          state.annualRate = parseFloat(e.target.value);
+          els.rateInput.value = state.annualRate;
+          calculateAndRender();
+        });
+        els.rateInput.addEventListener("input", (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val >= 0 && val <= 100) {
+            state.annualRate = val;
+            els.rateSlider.value = Math.min(30, Math.max(1, val));
+            calculateAndRender();
+          }
+        });
+
+        // Loan Tenure Sync
+        els.tenureSlider.addEventListener("input", (e) => {
+          state.tenureValue = parseFloat(e.target.value);
+          els.tenureInput.value = state.tenureValue;
+          calculateAndRender();
+        });
+        els.tenureInput.addEventListener("input", (e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val) && val >= 1) {
+            const maxCap = state.tenureUnit === "years" ? 50 : 600;
+            state.tenureValue = Math.min(maxCap, val);
+            els.tenureSlider.value = Math.min(
+              parseFloat(els.tenureSlider.max),
+              state.tenureValue,
+            );
+            calculateAndRender();
+          }
+        });
+
+        // Start Month Input
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        els.startMonthInput.value = `${yyyy}-${mm}`;
+
+        els.startMonthInput.addEventListener("change", (e) => {
+          if (e.target.value) {
+            const [yearStr, monthStr] = e.target.value.split("-");
+            state.startYear = parseInt(yearStr, 10);
+            state.startMonth = parseInt(monthStr, 10) - 1;
+            state.expandedYears.clear();
+            calculateAndRender();
+          }
+        });
+      }
+
+      // Initialize on Window Load
+      window.onload = function () {
+        lucide.createIcons();
+        initEventListeners();
+        calculateAndRender();
+      };
+    </script>
+  </body>
+</html>
